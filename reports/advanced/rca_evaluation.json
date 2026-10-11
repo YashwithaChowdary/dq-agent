@@ -1,0 +1,36 @@
+{
+  "detection_rate": 1.0,
+  "explanation_rate": 1.0,
+  "defects": [
+    {
+      "id": "D1",
+      "symptom": "40 source orders missing from target",
+      "detected": true,
+      "explained": true
+    },
+    {
+      "id": "D2",
+      "symptom": "Customer_ID missing in 120 records",
+      "detected": true,
+      "explained": true
+    },
+    {
+      "id": "D3",
+      "symptom": "Revenue mismatch between source and target (474 EUR records, x1.08)",
+      "detected": true,
+      "explained": true
+    },
+    {
+      "id": "D4",
+      "symptom": "25 duplicate order_id rows in target",
+      "detected": true,
+      "explained": true
+    },
+    {
+      "id": "D5",
+      "symptom": "60 rows with status outside the allowed set",
+      "detected": true,
+      "explained": true
+    }
+  ]
+}

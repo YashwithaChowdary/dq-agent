@@ -1,0 +1,152 @@
+{
+  "findings": [
+    {
+      "title": "Duplicate rows from non-idempotent load",
+      "check_ids": [
+        "duplicates.order_id"
+      ],
+      "facts": [
+        {
+          "statement": "25 duplicate key rows in target",
+          "source": "duplicates.order_id"
+        },
+        {
+          "statement": "Context mentions a retried load",
+          "source": "changelog.md"
+        },
+        {
+          "statement": "Load mode is APPEND",
+          "source": "etl_transform.sql"
+        },
+        {
+          "statement": "Load mode is APPEND",
+          "source": "metadata.json"
+        },
+        {
+          "statement": "Source keys are unique, so duplicates were introduced by the load",
+          "source": "duplicates.order_id.source"
+        }
+      ],
+      "hypothesis": "A load was re-run in append mode, inserting part of a batch twice.",
+      "assumptions": [
+        "The retry is the only re-run in the window"
+      ],
+      "confidence": "high",
+      "next_steps": [
+        "Count duplicates by load batch/ingestion timestamp",
+        "Switch the load to MERGE on the primary key",
+        "Deduplicate the affected partition"
+      ]
+    },
+    {
+      "title": "Source rows dropped by transform",
+      "check_ids": [
+        "keys_missing_in_target",
+        "record_count"
+      ],
+      "facts": [
+        {
+          "statement": "40 source keys absent from target",
+          "source": "keys_missing_in_target"
+        },
+        {
+          "statement": "All missing rows have quantity between -3 and -1",
+          "source": "keys_missing_in_target"
+        },
+        {
+          "statement": "Transform filters on quantity > 0",
+          "source": "etl_transform.sql"
+        },
+        {
+          "statement": "Net row difference -15 = -40 dropped + 25 duplicates",
+          "source": "record_count"
+        }
+      ],
+      "hypothesis": "The filter `quantity > 0` in the transform removes these rows.",
+      "assumptions": [
+        "The dropped rows are valid business records (e.g. refunds)"
+      ],
+      "confidence": "high",
+      "next_steps": [
+        "Confirm with the data owner whether these rows should be excluded",
+        "If not, remove or narrow the filter and backfill"
+      ]
+    },
+    {
+      "title": "NULL customer_id in target",
+      "check_ids": [
+        "missing_values.customer_id"
+      ],
+      "facts": [
+        {
+          "statement": "122 NULL customer_id values in target",
+          "source": "missing_values.customer_id"
+        },
+        {
+          "statement": "customer_id is taken from a LEFT JOIN to warehouse.dim_customer",
+          "source": "etl_transform.sql"
+        },
+        {
+          "statement": "Context records a change to dim_customer",
+          "source": "changelog.md"
+        },
+        {
+          "statement": "Context records a change to dim_customer",
+          "source": "metadata.json"
+        }
+      ],
+      "hypothesis": "A key change in dim_customer breaks the join, so unmatched rows get NULL customer_id.",
+      "assumptions": [
+        "Missing values are not present upstream"
+      ],
+      "confidence": "high",
+      "next_steps": [
+        "Query unmatched customer_id values against the dimension",
+        "Update the join to the new key format or add a mapping table"
+      ]
+    },
+    {
+      "title": "revenue mismatch",
+      "check_ids": [
+        "value_match.revenue",
+        "rule.revenue_formula"
+      ],
+      "facts": [
+        {
+          "statement": "474 rows differ; target/source ratio median 1.08 (range 1.0799\u20131.0801)",
+          "source": "value_match.revenue"
+        },
+        {
+          "statement": "All mismatched rows have currency = EUR",
+          "source": "value_match.revenue"
+        },
+        {
+          "statement": "Transform has special handling when currency = 'EUR'",
+          "source": "etl_transform.sql"
+        }
+      ],
+      "hypothesis": "The transform converts revenue for EUR rows, but source revenue is already converted (double conversion).",
+      "assumptions": [
+        "The rate used equals the observed ratio"
+      ],
+      "confidence": "high",
+      "next_steps": [
+        "Compare revenue for a few EUR orders at each pipeline stage",
+        "Remove the duplicate conversion and reprocess affected dates"
+      ]
+    }
+  ],
+  "summary": "Heuristic analysis matched 4 known failure patterns.",
+  "mode": "heuristic",
+  "model": null,
+  "context_files": [
+    "changelog.md",
+    "etl_transform.sql",
+    "metadata.json"
+  ],
+  "unexplained_checks": [
+    "rule.allowed_status",
+    "value_match.status"
+  ],
+  "guardrail_warnings": []
+}

@@ -1,0 +1,69 @@
+[
+  {
+    "id": "D1",
+    "symptom": "40 source orders missing from target",
+    "true_cause": "Transform v2.3 added WHERE quantity > 0, silently dropping refund orders",
+    "expected_checks": [
+      "record_count",
+      "keys_missing_in_target"
+    ],
+    "keywords": [
+      "quantity",
+      "refund",
+      "filter"
+    ]
+  },
+  {
+    "id": "D2",
+    "symptom": "Customer_ID missing in 120 records",
+    "true_cause": "dim_customer key migrated to 'C-' prefixed strings; LEFT JOIN on integer key fails for migrated customers",
+    "expected_checks": [
+      "missing_values.customer_id"
+    ],
+    "keywords": [
+      "join",
+      "dim_customer",
+      "key"
+    ]
+  },
+  {
+    "id": "D3",
+    "symptom": "Revenue mismatch between source and target (474 EUR records, x1.08)",
+    "true_cause": "FX conversion applied twice for EUR orders in transform v2.3",
+    "expected_checks": [
+      "value_match.revenue",
+      "rule.revenue_formula"
+    ],
+    "keywords": [
+      "fx",
+      "eur",
+      "currency"
+    ]
+  },
+  {
+    "id": "D4",
+    "symptom": "25 duplicate order_id rows in target",
+    "true_cause": "Load job retried in append mode without MERGE/idempotency after timeout",
+    "expected_checks": [
+      "duplicates.order_id"
+    ],
+    "keywords": [
+      "retry",
+      "append",
+      "merge"
+    ]
+  },
+  {
+    "id": "D5",
+    "symptom": "60 rows with status outside the allowed set",
+    "true_cause": "Upstream casing change not documented in pipeline context (should be flagged as unknown)",
+    "expected_checks": [
+      "rule.allowed_status",
+      "value_match.status"
+    ],
+    "keywords": [
+      "case",
+      "status"
+    ]
+  }
+]

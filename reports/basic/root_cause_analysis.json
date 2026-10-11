@@ -1,0 +1,77 @@
+{
+  "findings": [
+    {
+      "title": "NULL customer_id in target",
+      "check_ids": [
+        "missing_values.customer_id"
+      ],
+      "facts": [
+        {
+          "statement": "120 NULL customer_id values in target",
+          "source": "missing_values.customer_id"
+        },
+        {
+          "statement": "customer_id is taken from a LEFT JOIN to warehouse.dim_customer",
+          "source": "etl_transform.sql"
+        },
+        {
+          "statement": "Context records a change to dim_customer",
+          "source": "changelog.md"
+        },
+        {
+          "statement": "Context records a change to dim_customer",
+          "source": "metadata.json"
+        }
+      ],
+      "hypothesis": "A key change in dim_customer breaks the join, so unmatched rows get NULL customer_id.",
+      "assumptions": [
+        "Missing values are not present upstream"
+      ],
+      "confidence": "high",
+      "next_steps": [
+        "Query unmatched customer_id values against the dimension",
+        "Update the join to the new key format or add a mapping table"
+      ]
+    },
+    {
+      "title": "revenue mismatch",
+      "check_ids": [
+        "value_match.revenue",
+        "rule.revenue_formula"
+      ],
+      "facts": [
+        {
+          "statement": "488 rows differ; target/source ratio median 1.08 (range 1.0799\u20131.0801)",
+          "source": "value_match.revenue"
+        },
+        {
+          "statement": "All mismatched rows have currency = EUR",
+          "source": "value_match.revenue"
+        },
+        {
+          "statement": "Transform has special handling when currency = 'EUR'",
+          "source": "etl_transform.sql"
+        }
+      ],
+      "hypothesis": "The transform converts revenue for EUR rows, but source revenue is already converted (double conversion).",
+      "assumptions": [
+        "The rate used equals the observed ratio"
+      ],
+      "confidence": "high",
+      "next_steps": [
+        "Compare revenue for a few EUR orders at each pipeline stage",
+        "Remove the duplicate conversion and reprocess affected dates"
+      ]
+    }
+  ],
+  "summary": "Heuristic analysis matched 2 known failure patterns.",
+  "mode": "heuristic",
+  "model": null,
+  "context_files": [
+    "changelog.md",
+    "etl_transform.sql",
+    "metadata.json"
+  ],
+  "unexplained_checks": [],
+  "guardrail_warnings": []
+}

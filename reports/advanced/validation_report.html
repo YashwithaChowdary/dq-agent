@@ -1,0 +1,233 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Validation Report</title><style>
+:root{--bg:#fbfaf7;--fg:#1f2328;--muted:#5b6370;--card:#fff;--line:#e3e0d8;--pass:#1a7f4b;--fail:#c2410c;--accent:#3b5bdb}
+@media (prefers-color-scheme:dark){:root{--bg:#15171a;--fg:#e6e6e6;--muted:#9aa3ad;--card:#1d2024;--line:#2d3137;--pass:#4ade80;--fail:#fb923c;--accent:#8ea4ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:980px;margin:0 auto;padding:32px 16px 64px}h1{font-size:26px;margin:0 0 4px}h2{margin-top:40px;font-size:19px}
+.meta{color:var(--muted);font-size:13px}.kpis{display:flex;gap:12px;margin:20px 0;flex-wrap:wrap}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;min-width:120px}
+.kpi b{display:block;font-size:28px}.pass{color:var(--pass)}.fail{color:var(--fail)}
+.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:13.5px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-weight:600}
+code{font:12.5px ui-monospace,Menlo,monospace}.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:14px 18px;margin:14px 0}
+.card h3{margin:0 0 6px;font-size:16px}.tag{font-size:12px;border:1px solid var(--line);border-radius:99px;padding:1px 8px;color:var(--muted)}
+.src{color:var(--muted);font-size:12px}.hyp{background:color-mix(in srgb,var(--accent) 8%,transparent);padding:8px 10px;border-radius:6px}
+details pre{white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:6px}
+</style></head><body><main>
+<h1>Data Validation Report: orders</h1>
+<div class="meta">Run 2026-10-11T16:24:41+00:00 · source rows 2000 · target rows 1985</div>
+<div class="kpis"><div class="kpi">Checks<b>18</b></div><div class="kpi">Passed<b class="pass">10</b></div>
+<div class="kpi">Failed<b class="fail">8</b></div></div>
+<h2>Issues</h2><ul><li>Record count differs: source 2000, target 1985</li><li>25 duplicate order_id values in target</li><li>40 source records missing from target</li><li>customer_id missing in 122 records</li><li>revenue mismatch between source and target (474 records)</li><li>status mismatch between source and target (60 records)</li><li>Business rule failed: revenue = quantity * unit_price * (1 - discount) (478 records)</li><li>Business rule failed: status in allowed set (60 records)</li></ul>
+<h2>Root cause analysis</h2><div class="meta">Analyzer: offline heuristic baseline</div><p>Heuristic analysis matched 4 known failure patterns.</p><div class='card'><h3>Duplicate rows from non-idempotent load <span class='tag'>confidence: high</span></h3><div class='src'>Explains: <code>duplicates.order_id</code></div><p><b>Facts (from evidence)</b></p><ul><li>25 duplicate key rows in target <span class='src'>[duplicates.order_id]</span></li><li>Context mentions a retried load <span class='src'>[changelog.md]</span></li><li>Load mode is APPEND <span class='src'>[etl_transform.sql]</span></li><li>Load mode is APPEND <span class='src'>[metadata.json]</span></li><li>Source keys are unique, so duplicates were introduced by the load <span class='src'>[duplicates.order_id.source]</span></li></ul><p class='hyp'><b>Likely root cause:</b> A load was re-run in append mode, inserting part of a batch twice.</p><p><b>Assumptions</b></p><ul><li>The retry is the only re-run in the window</li></ul><p><b>Next steps</b></p><ol><li>Count duplicates by load batch/ingestion timestamp</li><li>Switch the load to MERGE on the primary key</li><li>Deduplicate the affected partition</li></ol></div><div class='card'><h3>Source rows dropped by transform <span class='tag'>confidence: high</span></h3><div class='src'>Explains: <code>keys_missing_in_target</code>, <code>record_count</code></div><p><b>Facts (from evidence)</b></p><ul><li>40 source keys absent from target <span class='src'>[keys_missing_in_target]</span></li><li>All missing rows have quantity between -3 and -1 <span class='src'>[keys_missing_in_target]</span></li><li>Transform filters on quantity &gt; 0 <span class='src'>[etl_transform.sql]</span></li><li>Net row difference -15 = -40 dropped + 25 duplicates <span class='src'>[record_count]</span></li></ul><p class='hyp'><b>Likely root cause:</b> The filter `quantity &gt; 0` in the transform removes these rows.</p><p><b>Assumptions</b></p><ul><li>The dropped rows are valid business records (e.g. refunds)</li></ul><p><b>Next steps</b></p><ol><li>Confirm with the data owner whether these rows should be excluded</li><li>If not, remove or narrow the filter and backfill</li></ol></div><div class='card'><h3>NULL customer_id in target <span class='tag'>confidence: high</span></h3><div class='src'>Explains: <code>missing_values.customer_id</code></div><p><b>Facts (from evidence)</b></p><ul><li>122 NULL customer_id values in target <span class='src'>[missing_values.customer_id]</span></li><li>customer_id is taken from a LEFT JOIN to warehouse.dim_customer <span class='src'>[etl_transform.sql]</span></li><li>Context records a change to dim_customer <span class='src'>[changelog.md]</span></li><li>Context records a change to dim_customer <span class='src'>[metadata.json]</span></li></ul><p class='hyp'><b>Likely root cause:</b> A key change in dim_customer breaks the join, so unmatched rows get NULL customer_id.</p><p><b>Assumptions</b></p><ul><li>Missing values are not present upstream</li></ul><p><b>Next steps</b></p><ol><li>Query unmatched customer_id values against the dimension</li><li>Update the join to the new key format or add a mapping table</li></ol></div><div class='card'><h3>revenue mismatch <span class='tag'>confidence: high</span></h3><div class='src'>Explains: <code>value_match.revenue</code>, <code>rule.revenue_formula</code></div><p><b>Facts (from evidence)</b></p><ul><li>474 rows differ; target/source ratio median 1.08 (range 1.0799–1.0801) <span class='src'>[value_match.revenue]</span></li><li>All mismatched rows have currency = EUR <span class='src'>[value_match.revenue]</span></li><li>Transform has special handling when currency = &#x27;EUR&#x27; <span class='src'>[etl_transform.sql]</span></li></ul><p class='hyp'><b>Likely root cause:</b> The transform converts revenue for EUR rows, but source revenue is already converted (double conversion).</p><p><b>Assumptions</b></p><ul><li>The rate used equals the observed ratio</li></ul><p><b>Next steps</b></p><ol><li>Compare revenue for a few EUR orders at each pipeline stage</li><li>Remove the duplicate conversion and reprocess affected dates</li></ol></div><div class='card' style='border-left-color:var(--fail)'><h3>Not explained by the analysis</h3><p>These checks failed but no finding explains them. Investigate manually.</p><ul><li><code>rule.allowed_status</code></li><li><code>value_match.status</code></li></ul></div>
+<h2>All checks</h2><div class="tablewrap"><table><tr><th>Status</th><th>Check</th><th>Expected</th><th>Actual</th><th>Affected</th></tr><tr><td class='fail'><b>FAIL</b></td><td><code>record_count</code><br><span class='src'>Target row count equals source row count</span></td><td>2000</td><td>1985</td><td>15</td></tr><tr><td class='fail'><b>FAIL</b></td><td><code>duplicates.order_id</code><br><span class='src'>order_id is unique in target</span></td><td>0</td><td>25</td><td>25</td></tr><tr><td class='fail'><b>FAIL</b></td><td><code>keys_missing_in_target</code><br><span class='src'>Every source order_id exists in target</span></td><td>0</td><td>40</td><td>40</td></tr><tr><td class='fail'><b>FAIL</b></td><td><code>missing_values.customer_id</code><br><span class='src'>No NULLs in required column customer_id</span></td><td>0</td><td>122</td><td>122</td></tr><tr><td class='fail'><b>FAIL</b></td><td><code>value_match.revenue</code><br><span class='src'>revenue matches source for matched order_ids</span></td><td>0</td><td>474</td><td>474</td></tr><tr><td class='fail'><b>FAIL</b></td><td><code>value_match.status</code><br><span class='src'>status matches source for matched order_ids</span></td><td>0</td><td>60</td><td>60</td></tr><tr><td class='fail'><b>FAIL</b></td><td><code>rule.revenue_formula</code><br><span class='src'>revenue = quantity * unit_price * (1 - discount)</span></td><td>0</td><td>478</td><td>478</td></tr><tr><td class='fail'><b>FAIL</b></td><td><code>rule.allowed_status</code><br><span class='src'>status in allowed set</span></td><td>0</td><td>60</td><td>60</td></tr><tr><td class='pass'><b>PASS</b></td><td><code>schema_columns</code><br><span class='src'>Target has the same columns as source</span></td><td>[&quot;currency&quot;, &quot;customer_id&quot;, &quot;discount&quot;, &quot;order_date&quot;, &quot;order_id&quot;, &quot;quantity&quot;,...</td><td>[&quot;currency&quot;, &quot;customer_id&quot;, &quot;discount&quot;, &quot;order_date&quot;, &quot;order_id&quot;, &quot;quantity&quot;,...</td><td>0</td></tr><tr><td class='pass'><b>PASS</b></td><td><code>duplicates.order_id.source</code><br><span class='src'>order_id is unique in source</span></td><td>0</td><td>0</td><td>0</td></tr><tr><td class='pass'><b>PASS</b></td><td><code>keys_unexpected_in_target</code><br><span class='src'>Target has no order_id absent from source</span></td><td>0</td><td>0</td><td>0</td></tr><tr><td class='pass'><b>PASS</b></td><td><code>data_types</code><br><span class='src'>Column types match the rules</span></td><td>{&quot;order_id&quot;: &quot;int&quot;, &quot;customer_id&quot;: &quot;int&quot;, &quot;order_date&quot;: &quot;date&quot;, &quot;currency&quot;: &quot;...</td><td>{&quot;order_id&quot;: &quot;int&quot;, &quot;customer_id&quot;: &quot;int&quot;, &quot;order_date&quot;: &quot;date&quot;, &quot;currency&quot;: &quot;...</td><td>0</td></tr><tr><td class='pass'><b>PASS</b></td><td><code>missing_values.order_id</code><br><span class='src'>No NULLs in required column order_id</span></td><td>0</td><td>0</td><td>0</td></tr><tr><td class='pass'><b>PASS</b></td><td><code>missing_values.revenue</code><br><span class='src'>No NULLs in required column revenue</span></td><td>0</td><td>0</td><td>0</td></tr><tr><td class='pass'><b>PASS</b></td><td><code>missing_values.status</code><br><span class='src'>No NULLs in required column status</span></td><td>0</td><td>0</td><td>0</td></tr><tr><td class='pass'><b>PASS</b></td><td><code>value_match.quantity</code><br><span class='src'>quantity matches source for matched order_ids</span></td><td>0</td><td>0</td><td>0</td></tr><tr><td class='pass'><b>PASS</b></td><td><code>value_match.unit_price</code><br><span class='src'>unit_price matches source for matched order_ids</span></td><td>0</td><td>0</td><td>0</td></tr><tr><td class='pass'><b>PASS</b></td><td><code>rule.discount_range</code><br><span class='src'>discount between 0 and 1</span></td><td>0</td><td>0</td><td>0</td></tr></table></div>
+<h2>Mismatch details</h2><details><summary><code>record_count</code> · 15 rows</summary><pre>{
+ &quot;difference&quot;: -15
+}</pre></details><details><summary><code>duplicates.order_id</code> · 25 rows</summary><pre>{
+ &quot;sample_duplicate_keys&quot;: [
+  101117,
+  100584,
+  100459,
+  100388,
+  101522
+ ]
+}</pre></details><details><summary><code>keys_missing_in_target</code> · 40 rows</summary><pre>{
+ &quot;sample_keys&quot;: [
+  100087,
+  100128,
+  100154,
+  100328,
+  100392
+ ]
+}</pre></details><details><summary><code>missing_values.customer_id</code> · 122 rows</summary><pre>{
+ &quot;null_pct&quot;: 6.15
+}</pre></details><details><summary><code>value_match.revenue</code> · 474 rows</summary><pre>{
+ &quot;rows_compared&quot;: 1960,
+ &quot;null_in_target&quot;: 0,
+ &quot;sample&quot;: [
+  {
+   &quot;order_id&quot;: 100004,
+   &quot;revenue_src&quot;: 245.54,
+   &quot;revenue_tgt&quot;: 265.18
+  },
+  {
+   &quot;order_id&quot;: 100010,
+   &quot;revenue_src&quot;: 1206.83,
+   &quot;revenue_tgt&quot;: 1303.38
+  },
+  {
+   &quot;order_id&quot;: 100019,
+   &quot;revenue_src&quot;: 481.28,
+   &quot;revenue_tgt&quot;: 519.78
+  },
+  {
+   &quot;order_id&quot;: 100021,
+   &quot;revenue_src&quot;: 232.97,
+   &quot;revenue_tgt&quot;: 251.61
+  },
+  {
+   &quot;order_id&quot;: 100030,
+   &quot;revenue_src&quot;: 848.05,
+   &quot;revenue_tgt&quot;: 915.89
+  }
+ ],
+ &quot;target_to_source_ratio&quot;: {
+  &quot;median&quot;: 1.08,
+  &quot;min&quot;: 1.0799,
+  &quot;max&quot;: 1.0801
+ }
+}</pre></details><details><summary><code>value_match.status</code> · 60 rows</summary><pre>{
+ &quot;rows_compared&quot;: 1960,
+ &quot;null_in_target&quot;: 0,
+ &quot;sample&quot;: [
+  {
+   &quot;order_id&quot;: 100003,
+   &quot;status_src&quot;: &quot;delivered&quot;,
+   &quot;status_tgt&quot;: &quot;DELIVERED&quot;
+  },
+  {
+   &quot;order_id&quot;: 100110,
+   &quot;status_src&quot;: &quot;shipped&quot;,
+   &quot;status_tgt&quot;: &quot;SHIPPED&quot;
+  },
+  {
+   &quot;order_id&quot;: 100130,
+   &quot;status_src&quot;: &quot;delivered&quot;,
+   &quot;status_tgt&quot;: &quot;DELIVERED&quot;
+  },
+  {
+   &quot;order_id&quot;: 100143,
+   &quot;status_src&quot;: &quot;shipped&quot;,
+   &quot;status_tgt&quot;: &quot;SHIPPED&quot;
+  },
+  {
+   &quot;order_id&quot;: 100176,
+   &quot;status_src&quot;: &quot;placed&quot;,
+   &quot;status_tgt&quot;: &quot;PLACED&quot;
+  }
+ ]
+}</pre></details><details><summary><code>rule.revenue_formula</code> · 478 rows</summary><pre>{
+ &quot;rule&quot;: &quot;revenue = quantity * unit_price * (1 - discount)&quot;,
+ &quot;sample&quot;: [
+  {
+   &quot;order_id&quot;: 100004,
+   &quot;customer_id&quot;: 263.0,
+   &quot;order_date&quot;: &quot;2026-09-14&quot;,
+   &quot;currency&quot;: &quot;EUR&quot;,
+   &quot;quantity&quot;: 4,
+   &quot;unit_price&quot;: 76.73,
+   &quot;discount&quot;: 0.2,
+   &quot;revenue&quot;: 265.18,
+   &quot;status&quot;: &quot;delivered&quot;
+  },
+  {
+   &quot;order_id&quot;: 100010,
+   &quot;customer_id&quot;: 57.0,
+   &quot;order_date&quot;: &quot;2026-09-19&quot;,
+   &quot;currency&quot;: &quot;EUR&quot;,
+   &quot;quantity&quot;: 5,
+   &quot;unit_price&quot;: 254.07,
+   &quot;discount&quot;: 0.05,
+   &quot;revenue&quot;: 1303.38,
+   &quot;status&quot;: &quot;returned&quot;
+  },
+  {
+   &quot;order_id&quot;: 100019,
+   &quot;customer_id&quot;: 504.0,
+   &quot;order_date&quot;: &quot;2026-09-22&quot;,
+   &quot;currency&quot;: &quot;EUR&quot;,
+   &quot;quantity&quot;: 3,
+   &quot;unit_price&quot;: 178.25,
+   &quot;discount&quot;: 0.1,
+   &quot;revenue&quot;: 519.78,
+   &quot;status&quot;: &quot;returned&quot;
+  },
+  {
+   &quot;order_id&quot;: 100021,
+   &quot;customer_id&quot;: 300.0,
+   &quot;order_date&quot;: &quot;2026-09-10&quot;,
+   &quot;currency&quot;: &quot;EUR&quot;,
+   &quot;quantity&quot;: 3,
+   &quot;unit_price&quot;: 91.36,
+   &quot;discount&quot;: 0.15,
+   &quot;revenue&quot;: 251.61,
+   &quot;status&quot;: &quot;shipped&quot;
+  },
+  {
+   &quot;order_id&quot;: 100030,
+   &quot;customer_id&quot;: 266.0,
+   &quot;order_date&quot;: &quot;2026-09-11&quot;,
+   &quot;currency&quot;: &quot;EUR&quot;,
+   &quot;quantity&quot;: 6,
+   &quot;unit_price&quot;: 148.78,
+   &quot;discount&quot;: 0.05,
+   &quot;revenue&quot;: 915.89,
+   &quot;status&quot;: &quot;placed&quot;
+  }
+ ]
+}</pre></details><details><summary><code>rule.allowed_status</code> · 60 rows</summary><pre>{
+ &quot;rule&quot;: &quot;status in allowed set&quot;,
+ &quot;sample&quot;: [
+  {
+   &quot;order_id&quot;: 100003,
+   &quot;customer_id&quot;: 393.0,
+   &quot;order_date&quot;: &quot;2026-09-12&quot;,
+   &quot;currency&quot;: &quot;INR&quot;,
+   &quot;quantity&quot;: 3,
+   &quot;unit_price&quot;: 154.52,
+   &quot;discount&quot;: 0.0,
+   &quot;revenue&quot;: 463.56,
+   &quot;status&quot;: &quot;DELIVERED&quot;
+  },
+  {
+   &quot;order_id&quot;: 100110,
+   &quot;customer_id&quot;: 423.0,
+   &quot;order_date&quot;: &quot;2026-09-09&quot;,
+   &quot;currency&quot;: &quot;USD&quot;,
+   &quot;quantity&quot;: 8,
+   &quot;unit_price&quot;: 169.25,
+   &quot;discount&quot;: 0.15,
+   &quot;revenue&quot;: 1150.9,
+   &quot;status&quot;: &quot;SHIPPED&quot;
+  },
+  {
+   &quot;order_id&quot;: 100130,
+   &quot;customer_id&quot;: 381.0,
+   &quot;order_date&quot;: &quot;2026-09-10&quot;,
+   &quot;currency&quot;: &quot;USD&quot;,
+   &quot;quantity&quot;: 2,
+   &quot;unit_price&quot;: 288.38,
+   &quot;discount&quot;: 0.05,
+   &quot;revenue&quot;: 547.92,
+   &quot;status&quot;: &quot;DELIVERED&quot;
+  },
+  {
+   &quot;order_id&quot;: 100143,
+   &quot;customer_id&quot;: 166.0,
+   &quot;order_date&quot;: &quot;2026-09-29&quot;,
+   &quot;currency&quot;: &quot;EUR&quot;,
+   &quot;quantity&quot;: 4,
+   &quot;unit_price&quot;: 89.26,
+   &quot;discount&quot;: 0.1,
+   &quot;revenue&quot;: 347.05,
+   &quot;status&quot;: &quot;SHIPPED&quot;
+  },
+  {
+   &quot;order_id&quot;: 100176,
+   &quot;customer_id&quot;: 277.0,
+   &quot;order_date&quot;: &quot;2026-09-23&quot;,
+   &quot;currency&quot;: &quot;EUR&quot;,
+   &quot;quantity&quot;: 6,
+   &quot;unit_price&quot;: 315.33,
+   &quot;discount&quot;: 0.05,
+   &quot;revenue&quot;: 1941.17,
+   &quot;status&quot;: &quot;PLACED&quot;
+  }
+ ],
+ &quot;unexpected_values&quot;: {
+  &quot;DELIVERED&quot;: 28,
+  &quot;SHIPPED&quot;: 18,
+  &quot;PLACED&quot;: 14
+ }
+}</pre></details>
+</main></body></html>

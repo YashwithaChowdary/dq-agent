@@ -1,0 +1,19 @@
+{
+  "pipeline": "load_fact_orders",
+  "source": {"system": "orders_app (PostgreSQL)", "table": "public.orders"},
+  "target": {"system": "warehouse", "table": "warehouse.fact_orders"},
+  "primary_key": "order_id",
+  "load_mode": "append",
+  "schedule": "daily 02:00 UTC",
+  "columns": {
+    "order_id": {"type": "int", "description": "Order identifier, unique per order"},
+    "customer_id": {"type": "int", "description": "Customer key, looked up from dim_customer"},
+    "order_date": {"type": "date"},
+    "currency": {"type": "string", "allowed": ["USD", "EUR", "INR"]},
+    "quantity": {"type": "int", "description": "Negative values represent refunds"},
+    "unit_price": {"type": "float"},
+    "discount": {"type": "float", "range": [0, 1]},
+    "revenue": {"type": "float", "description": "quantity * unit_price * (1 - discount), in USD"},
+    "status": {"type": "string", "allowed": ["placed", "shipped", "delivered", "returned"]}
+  }
+}

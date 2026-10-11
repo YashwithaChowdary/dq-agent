@@ -1,0 +1,29 @@
+[
+  {
+    "id": "D2",
+    "symptom": "Customer_ID missing in 120 records",
+    "true_cause": "dim_customer key migrated to 'C-' prefixed strings; LEFT JOIN on integer key fails for migrated customers",
+    "expected_checks": [
+      "missing_values.customer_id"
+    ],
+    "keywords": [
+      "join",
+      "dim_customer",
+      "key"
+    ]
+  },
+  {
+    "id": "D3",
+    "symptom": "Revenue mismatch between source and target (488 EUR records, x1.08)",
+    "true_cause": "FX conversion applied twice for EUR orders in transform v2.3",
+    "expected_checks": [
+      "value_match.revenue",
+      "rule.revenue_formula"
+    ],
+    "keywords": [
+      "fx",
+      "eur",
+      "currency"
+    ]
+  }
+]

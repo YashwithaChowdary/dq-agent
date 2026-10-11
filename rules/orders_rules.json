@@ -1,0 +1,43 @@
+{
+  "dataset": "orders",
+  "primary_key": "order_id",
+  "required_columns": ["order_id", "customer_id", "revenue", "status"],
+  "expected_types": {
+    "order_id": "int",
+    "customer_id": "int",
+    "order_date": "date",
+    "currency": "string",
+    "quantity": "int",
+    "unit_price": "float",
+    "discount": "float",
+    "revenue": "float",
+    "status": "string"
+  },
+  "compare_columns": ["quantity", "unit_price", "revenue", "status"],
+  "numeric_tolerance": 0.01,
+  "business_rules": [
+    {
+      "id": "revenue_formula",
+      "description": "revenue = quantity * unit_price * (1 - discount)",
+      "type": "formula",
+      "expression": "quantity * unit_price * (1 - discount)",
+      "column": "revenue",
+      "tolerance": 0.02
+    },
+    {
+      "id": "discount_range",
+      "description": "discount between 0 and 1",
+      "type": "range",
+      "column": "discount",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "allowed_status",
+      "description": "status in allowed set",
+      "type": "allowed_values",
+      "column": "status",
+      "values": ["placed", "shipped", "delivered", "returned"]
+    }
+  ]
+}

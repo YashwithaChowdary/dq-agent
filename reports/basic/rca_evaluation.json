@@ -1,0 +1,18 @@
+{
+  "detection_rate": 1.0,
+  "explanation_rate": 1.0,
+  "defects": [
+    {
+      "id": "D2",
+      "symptom": "Customer_ID missing in 120 records",
+      "detected": true,
+      "explained": true
+    },
+    {
+      "id": "D3",
+      "symptom": "Revenue mismatch between source and target (488 EUR records, x1.08)",
+      "detected": true,
+      "explained": true
+    }
+  ]
+}

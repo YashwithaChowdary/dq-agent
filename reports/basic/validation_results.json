@@ -1,0 +1,478 @@
+{
+  "dataset": "orders",
+  "run_at": "2026-10-11T16:24:41+00:00",
+  "source_rows": 2000,
+  "target_rows": 2000,
+  "summary": {
+    "total": 18,
+    "passed": 15,
+    "failed": 3
+  },
+  "checks": [
+    {
+      "check_id": "record_count",
+      "category": "completeness",
+      "description": "Target row count equals source row count",
+      "status": "PASS",
+      "severity": "high",
+      "expected": 2000,
+      "actual": 2000,
+      "affected_rows": 0,
+      "details": {
+        "difference": 0
+      }
+    },
+    {
+      "check_id": "schema_columns",
+      "category": "schema",
+      "description": "Target has the same columns as source",
+      "status": "PASS",
+      "severity": "high",
+      "expected": [
+        "currency",
+        "customer_id",
+        "discount",
+        "order_date",
+        "order_id",
+        "quantity",
+        "revenue",
+        "status",
+        "unit_price"
+      ],
+      "actual": [
+        "currency",
+        "customer_id",
+        "discount",
+        "order_date",
+        "order_id",
+        "quantity",
+        "revenue",
+        "status",
+        "unit_price"
+      ],
+      "affected_rows": 0,
+      "details": {
+        "missing_in_target": [],
+        "extra_in_target": []
+      }
+    },
+    {
+      "check_id": "duplicates.order_id.source",
+      "category": "uniqueness",
+      "description": "order_id is unique in source",
+      "status": "PASS",
+      "severity": "high",
+      "expected": 0,
+      "actual": 0,
+      "affected_rows": 0,
+      "details": {
+        "sample_duplicate_keys": []
+      }
+    },
+    {
+      "check_id": "duplicates.order_id",
+      "category": "uniqueness",
+      "description": "order_id is unique in target",
+      "status": "PASS",
+      "severity": "high",
+      "expected": 0,
+      "actual": 0,
+      "affected_rows": 0,
+      "details": {
+        "sample_duplicate_keys": []
+      }
+    },
+    {
+      "check_id": "keys_missing_in_target",
+      "category": "completeness",
+      "description": "Every source order_id exists in target",
+      "status": "PASS",
+      "severity": "high",
+      "expected": 0,
+      "actual": 0,
+      "affected_rows": 0,
+      "details": {
+        "sample_keys": []
+      }
+    },
+    {
+      "check_id": "keys_unexpected_in_target",
+      "category": "completeness",
+      "description": "Target has no order_id absent from source",
+      "status": "PASS",
+      "severity": "medium",
+      "expected": 0,
+      "actual": 0,
+      "affected_rows": 0,
+      "details": {
+        "sample_keys": []
+      }
+    },
+    {
+      "check_id": "data_types",
+      "category": "schema",
+      "description": "Column types match the rules",
+      "status": "PASS",
+      "severity": "medium",
+      "expected": {
+        "order_id": "int",
+        "customer_id": "int",
+        "order_date": "date",
+        "currency": "string",
+        "quantity": "int",
+        "unit_price": "float",
+        "discount": "float",
+        "revenue": "float",
+        "status": "string"
+      },
+      "actual": {
+        "order_id": "int",
+        "customer_id": "int",
+        "order_date": "date",
+        "currency": "string",
+        "quantity": "int",
+        "unit_price": "float",
+        "discount": "float",
+        "revenue": "float",
+        "status": "string"
+      },
+      "affected_rows": 0,
+      "details": {
+        "mismatches": {}
+      }
+    },
+    {
+      "check_id": "missing_values.order_id",
+      "category": "completeness",
+      "description": "No NULLs in required column order_id",
+      "status": "PASS",
+      "severity": "high",
+      "expected": 0,
+      "actual": 0,
+      "affected_rows": 0,
+      "details": {
+        "null_pct": 0.0
+      }
+    },
+    {
+      "check_id": "missing_values.customer_id",
+      "category": "completeness",
+      "description": "No NULLs in required column customer_id",
+      "status": "FAIL",
+      "severity": "high",
+      "expected": 0,
+      "actual": 120,
+      "affected_rows": 120,
+      "details": {
+        "null_pct": 6.0
+      }
+    },
+    {
+      "check_id": "missing_values.revenue",
+      "category": "completeness",
+      "description": "No NULLs in required column revenue",
+      "status": "PASS",
+      "severity": "high",
+      "expected": 0,
+      "actual": 0,
+      "affected_rows": 0,
+      "details": {
+        "null_pct": 0.0
+      }
+    },
+    {
+      "check_id": "missing_values.status",
+      "category": "completeness",
+      "description": "No NULLs in required column status",
+      "status": "PASS",
+      "severity": "high",
+      "expected": 0,
+      "actual": 0,
+      "affected_rows": 0,
+      "details": {
+        "null_pct": 0.0
+      }
+    },
+    {
+      "check_id": "value_match.quantity",
+      "category": "accuracy",
+      "description": "quantity matches source for matched order_ids",
+      "status": "PASS",
+      "severity": "high",
+      "expected": 0,
+      "actual": 0,
+      "affected_rows": 0,
+      "details": {
+        "rows_compared": 2000,
+        "null_in_target": 0,
+        "sample": []
+      }
+    },
+    {
+      "check_id": "value_match.unit_price",
+      "category": "accuracy",
+      "description": "unit_price matches source for matched order_ids",
+      "status": "PASS",
+      "severity": "high",
+      "expected": 0,
+      "actual": 0,
+      "affected_rows": 0,
+      "details": {
+        "rows_compared": 2000,
+        "null_in_target": 0,
+        "sample": []
+      }
+    },
+    {
+      "check_id": "value_match.revenue",
+      "category": "accuracy",
+      "description": "revenue matches source for matched order_ids",
+      "status": "FAIL",
+      "severity": "high",
+      "expected": 0,
+      "actual": 488,
+      "affected_rows": 488,
+      "details": {
+        "rows_compared": 2000,
+        "null_in_target": 0,
+        "sample": [
+          {
+            "order_id": 100004,
+            "revenue_src": 245.54,
+            "revenue_tgt": 265.18
+          },
+          {
+            "order_id": 100010,
+            "revenue_src": 1206.83,
+            "revenue_tgt": 1303.38
+          },
+          {
+            "order_id": 100019,
+            "revenue_src": 481.28,
+            "revenue_tgt": 519.78
+          },
+          {
+            "order_id": 100021,
+            "revenue_src": 232.97,
+            "revenue_tgt": 251.61
+          },
+          {
+            "order_id": 100030,
+            "revenue_src": 848.05,
+            "revenue_tgt": 915.89
+          }
+        ],
+        "target_to_source_ratio": {
+          "median": 1.08,
+          "min": 1.0799,
+          "max": 1.0801
+        },
+        "profile_of_mismatched_rows": {
+          "rows": 488,
+          "order_id": {
+            "min": 100004,
+            "max": 101983
+          },
+          "customer_id": {
+            "min": 1,
+            "max": 598
+          },
+          "currency": {
+            "top_values": {
+              "EUR": 488
+            }
+          },
+          "quantity": {
+            "min": -3,
+            "max": 9
+          },
+          "unit_price": {
+            "min": 7.9,
+            "max": 499.76
+          },
+          "discount": {
+            "min": 0.0,
+            "max": 0.2,
+            "top_values": {
+              "0.05": 108,
+              "0.0": 99,
+              "0.15": 98,
+              "0.2": 92
+            }
+          },
+          "revenue": {
+            "min": -1196.18,
+            "max": 3869.6
+          },
+          "status": {
+            "top_values": {
+              "delivered": 225,
+              "shipped": 131,
+              "placed": 108,
+              "returned": 24
+            }
+          }
+        }
+      }
+    },
+    {
+      "check_id": "value_match.status",
+      "category": "accuracy",
+      "description": "status matches source for matched order_ids",
+      "status": "PASS",
+      "severity": "high",
+      "expected": 0,
+      "actual": 0,
+      "affected_rows": 0,
+      "details": {
+        "rows_compared": 2000,
+        "null_in_target": 0,
+        "sample": []
+      }
+    },
+    {
+      "check_id": "rule.revenue_formula",
+      "category": "business_rule",
+      "description": "revenue = quantity * unit_price * (1 - discount)",
+      "status": "FAIL",
+      "severity": "high",
+      "expected": 0,
+      "actual": 488,
+      "affected_rows": 488,
+      "details": {
+        "rule": "revenue = quantity * unit_price * (1 - discount)",
+        "sample": [
+          {
+            "order_id": 100004,
+            "customer_id": 263.0,
+            "order_date": "2026-09-14",
+            "currency": "EUR",
+            "quantity": 4,
+            "unit_price": 76.73,
+            "discount": 0.2,
+            "revenue": 265.18,
+            "status": "delivered"
+          },
+          {
+            "order_id": 100010,
+            "customer_id": 57.0,
+            "order_date": "2026-09-19",
+            "currency": "EUR",
+            "quantity": 5,
+            "unit_price": 254.07,
+            "discount": 0.05,
+            "revenue": 1303.38,
+            "status": "returned"
+          },
+          {
+            "order_id": 100019,
+            "customer_id": 504.0,
+            "order_date": "2026-09-22",
+            "currency": "EUR",
+            "quantity": 3,
+            "unit_price": 178.25,
+            "discount": 0.1,
+            "revenue": 519.78,
+            "status": "returned"
+          },
+          {
+            "order_id": 100021,
+            "customer_id": 300.0,
+            "order_date": "2026-09-10",
+            "currency": "EUR",
+            "quantity": 3,
+            "unit_price": 91.36,
+            "discount": 0.15,
+            "revenue": 251.61,
+            "status": "shipped"
+          },
+          {
+            "order_id": 100030,
+            "customer_id": 266.0,
+            "order_date": "2026-09-11",
+            "currency": "EUR",
+            "quantity": 6,
+            "unit_price": 148.78,
+            "discount": 0.05,
+            "revenue": 915.89,
+            "status": "placed"
+          }
+        ],
+        "profile_of_failing_rows": {
+          "rows": 488,
+          "order_id": {
+            "min": 100004,
+            "max": 101983
+          },
+          "customer_id": {
+            "min": 1.0,
+            "max": 598.0
+          },
+          "currency": {
+            "top_values": {
+              "EUR": 488
+            }
+          },
+          "quantity": {
+            "min": -3,
+            "max": 9
+          },
+          "unit_price": {
+            "min": 7.9,
+            "max": 499.76
+          },
+          "discount": {
+            "min": 0.0,
+            "max": 0.2,
+            "top_values": {
+              "0.05": 108,
+              "0.0": 99,
+              "0.15": 98,
+              "0.2": 92
+            }
+          },
+          "revenue": {
+            "min": -1291.87,
+            "max": 4179.17
+          },
+          "status": {
+            "top_values": {
+              "delivered": 225,
+              "shipped": 131,
+              "placed": 108,
+              "returned": 24
+            }
+          }
+        }
+      }
+    },
+    {
+      "check_id": "rule.discount_range",
+      "category": "business_rule",
+      "description": "discount between 0 and 1",
+      "status": "PASS",
+      "severity": "high",
+      "expected": 0,
+      "actual": 0,
+      "affected_rows": 0,
+      "details": {
+        "rule": "discount between 0 and 1",
+        "sample": []
+      }
+    },
+    {
+      "check_id": "rule.allowed_status",
+      "category": "business_rule",
+      "description": "status in allowed set",
+      "status": "PASS",
+      "severity": "high",
+      "expected": 0,
+      "actual": 0,
+      "affected_rows": 0,
+      "details": {
+        "rule": "status in allowed set",
+        "sample": []
+      }
+    }
+  ]
+}
